@@ -4,7 +4,10 @@ import com.OswaldoBenitez.usersApi.Model.Address;
 import com.OswaldoBenitez.usersApi.Model.User;
 import org.springframework.stereotype.Repository;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,14 +16,17 @@ public class UserRepository {
 
     private List<User> users = new ArrayList<>();
 
+    private static final String SECRET_KEY = "MiClaveSecreta12345678901234567A";
+
     public UserRepository() {
+        String encryptedPassword = encryptPassword("qwerty123#");
 
         users.add(new User(
             UUID.randomUUID().toString(),
             "user1@mail.com",
             "user1",
-            "+1 5555555555",
-            "qwerty123#",
+            "+15555555555",
+            encryptedPassword,
             "AARR990101XXX",
             "01-01-2026 00:00",
             List.of(new Address(1, "workaddress", "street No. 1", "UK"),
@@ -31,8 +37,8 @@ public class UserRepository {
             UUID.randomUUID().toString(),
             "user2@mail.com",
             "user2",
-            "+1 6666666666",
-            "qwerty123#",
+            "+16666666666",
+            encryptedPassword,
             "BBRR990202YYY",
             "01-01-2026 00:00",
             List.of(new Address(1, "workaddress", "street No. 3", "US"),
@@ -43,8 +49,8 @@ public class UserRepository {
             UUID.randomUUID().toString(),
             "user3@mail.com",
             "user3",
-            "+1 7777777777",
-            "qwerty123&",
+            "+17777777777",
+            encryptedPassword,
             "CCRR990303ZZZ",
             "01-01-2026 00:00",
             List.of(new Address(1, "workaddress", "street No. 5", "UK"),
@@ -81,5 +87,17 @@ public class UserRepository {
 
     public void delete(User userToDelete) {
         users.remove(userToDelete);
+    }
+
+    private String encryptPassword(String plainText) {
+        try {
+            SecretKeySpec keySpec = new SecretKeySpec(SECRET_KEY.getBytes(), "AES");
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec);
+            byte[] encryptedBytes = cipher.doFinal(plainText.getBytes());
+            return Base64.getEncoder().encodeToString(encryptedBytes);
+        } catch (Exception e) {
+            throw new RuntimeException("Error encrypting password", e);
+        }
     }
 }

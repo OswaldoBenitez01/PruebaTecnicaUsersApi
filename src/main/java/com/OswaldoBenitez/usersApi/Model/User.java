@@ -1,6 +1,7 @@
 package com.OswaldoBenitez.usersApi.Model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public class User {
@@ -10,7 +11,7 @@ public class User {
     private String name;
     private String phone;
 
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     private String taxId;
@@ -63,7 +64,6 @@ public class User {
         this.phone = phone;
     }
 
-    @JsonIgnore
     public String getPassword() {
         return password;
     }

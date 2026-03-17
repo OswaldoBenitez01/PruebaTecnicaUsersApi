@@ -1,6 +1,6 @@
 package com.OswaldoBenitez.usersApi.Controller;
 
-import com.OswaldoBenitez.usersApi.service.AuthService;
+import com.OswaldoBenitez.usersApi.Service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
