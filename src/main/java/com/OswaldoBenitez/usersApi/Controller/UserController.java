@@ -2,6 +2,7 @@ package com.OswaldoBenitez.usersApi.Controller;
 
 import com.OswaldoBenitez.usersApi.Model.User;
 import com.OswaldoBenitez.usersApi.Service.UserService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +19,7 @@ public class UserController {
         this.userService = userService;
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping
     public ResponseEntity<List<User>> getUsers(
             @RequestParam(required = false) String sortedBy,
@@ -32,12 +34,14 @@ public class UserController {
         return ResponseEntity.ok(userList);
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User newUser) {
         User createdUser = userService.createUser(newUser);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/{userId}")
     public ResponseEntity<User> updateUser(@PathVariable String userId,
                                            @RequestBody User updatedFields) {
@@ -45,9 +49,10 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
+    @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/{userId}")
     public ResponseEntity<String> deleteUser(@PathVariable String userId) {
         userService.deleteUser(userId);
-        return ResponseEntity.ok("User deleted successfully");
+        return ResponseEntity.status(204).build();
     }
 }

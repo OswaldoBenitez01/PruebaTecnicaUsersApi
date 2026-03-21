@@ -23,38 +23,38 @@ public class UserRepository {
 
         users.add(new User(
             UUID.randomUUID().toString(),
-            "user1@mail.com",
-            "user1",
+            "josealberto1@mail.com",
+            "josealb2",
             "+15555555555",
             encryptedPassword,
             "AARR990101XXX",
-            "01-01-2026 00:00",
+            "10-01-2026 00:00",
             List.of(new Address(1, "workaddress", "street No. 1", "UK"),
                     new Address(2, "homeaddress", "street No. 2", "AU"))
         ));
 
         users.add(new User(
             UUID.randomUUID().toString(),
-            "user2@mail.com",
-            "user2",
+            "noemorales@mail.com",
+            "noem21",
             "+16666666666",
             encryptedPassword,
             "BBRR990202YYY",
-            "01-01-2026 00:00",
-            List.of(new Address(1, "workaddress", "street No. 3", "US"),
-                    new Address(2, "homeaddress", "street No. 4", "MX"))
+            "12-02-2026 00:00",
+            List.of(new Address(1, "siempre viva", "street No. 3", "US"),
+                    new Address(2, "springfield", "street No. 4", "MX"))
         ));
 
         users.add(new User(
             UUID.randomUUID().toString(),
-            "user3@mail.com",
-            "user3",
+            "alonsogtz@mail.com",
+            "gtzalonso",
             "+17777777777",
             encryptedPassword,
             "CCRR990303ZZZ",
             "01-01-2026 00:00",
-            List.of(new Address(1, "workaddress", "street No. 5", "UK"),
-                    new Address(2, "homeaddress", "street No. 6", "AU"))
+            List.of(new Address(1, "Madero", "street No. 5", "UK"),
+                    new Address(2, "Francisco", "street No. 6", "AU"))
         ));
     }
 
