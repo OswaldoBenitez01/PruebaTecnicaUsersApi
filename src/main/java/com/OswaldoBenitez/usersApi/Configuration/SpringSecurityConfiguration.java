@@ -1,4 +1,4 @@
-package com.OswaldoBenitez.usersApi.configuration;
+package com.OswaldoBenitez.usersApi.Configuration;
 
 import com.OswaldoBenitez.usersApi.Component.JwtFilter;
 import org.springframework.context.annotation.Bean;
