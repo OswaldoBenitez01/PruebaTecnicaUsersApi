@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
-
     private static final String SECRET_KEY = "MiClaveSecreta12345678901234567A";
 
     public UserService(UserRepository userRepository) {
@@ -29,78 +28,160 @@ public class UserService {
 
     public List<User> getUsers(String sortedBy) {
 
+        List<User> users = userRepository.findAll();
+
         if (sortedBy == null || sortedBy.isBlank()) {
-            return userRepository.findAll();
+            return users;
         }
 
-        switch (sortedBy) {
+        String sortField = sortedBy.toLowerCase();
+
+        switch (sortField) {
             case "name":
-                return userRepository.findAll()
-                        .stream()
-                        .sorted((userOne, userTwo) -> userOne.getName().compareTo(userTwo.getName()))
+                return users.stream()
+                        .sorted((userOne, userTwo) ->
+                                nullToEmpty(userOne.getName()).compareTo(nullToEmpty(userTwo.getName())))
                         .collect(Collectors.toList());
             case "email":
-                return userRepository.findAll()
-                        .stream()
-                        .sorted((userOne, userTwo) -> userOne.getEmail().compareTo(userTwo.getEmail()))
+                return users.stream()
+                        .sorted((userOne, userTwo) ->
+                                nullToEmpty(userOne.getEmail()).compareTo(nullToEmpty(userTwo.getEmail())))
                         .collect(Collectors.toList());
             case "id":
-                return userRepository.findAll()
-                        .stream()
-                        .sorted((userOne, userTwo) -> userOne.getId().compareTo(userTwo.getId()))
+                return users.stream()
+                        .sorted((userOne, userTwo) ->
+                                nullToEmpty(userOne.getId()).compareTo(nullToEmpty(userTwo.getId())))
                         .collect(Collectors.toList());
             case "phone":
-                return userRepository.findAll()
-                        .stream()
-                        .sorted((userOne, userTwo) -> userOne.getPhone().compareTo(userTwo.getPhone()))
+                return users.stream()
+                        .sorted((userOne, userTwo) ->
+                                nullToEmpty(userOne.getPhone()).compareTo(nullToEmpty(userTwo.getPhone())))
                         .collect(Collectors.toList());
             case "tax_id":
-                return userRepository.findAll()
-                        .stream()
-                        .sorted((userOne, userTwo) -> userOne.getTaxId().compareTo(userTwo.getTaxId()))
+                return users.stream()
+                        .sorted((userOne, userTwo) ->
+                                nullToEmpty(userOne.getTaxId()).compareTo(nullToEmpty(userTwo.getTaxId())))
                         .collect(Collectors.toList());
             case "created_at":
-                return userRepository.findAll()
-                        .stream()
-                        .sorted((userOne, userTwo) -> userOne.getCreatedAt().compareTo(userTwo.getCreatedAt()))
+                return users.stream()
+                        .sorted((userOne, userTwo) ->
+                                nullToEmpty(userOne.getCreatedAt()).compareTo(nullToEmpty(userTwo.getCreatedAt())))
                         .collect(Collectors.toList());
             default:
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid sortedBy: " + sortedBy);
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Invalid sortedBy: " + sortedBy
+                );
         }
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     public List<User> getFilteredUsers(String filter) {
 
-        String[] filterParts = filter.split(" ", 3);
-
-        if (filterParts.length != 3) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Filter format must be: field+operator+value");
+        if (filter == null || filter.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Filter is required. Format: field operator value"
+            );
         }
 
-        String fieldName   = filterParts[0];
-        String operator    = filterParts[1];
-        String searchValue = filterParts[2].toLowerCase();
+        String[] parts = filter.split(" ", 3);
+        if (parts.length != 3) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Filter format must be: field operator value"
+            );
+        }
+
+        String fieldName = parts[0];
+        String operator = parts[1];
+        String searchValue = parts[2].toLowerCase();
 
         return userRepository.findAll()
                 .stream()
-                .filter(currentUser -> matchesFilter(currentUser, fieldName, operator, searchValue))
+                .filter(user -> {
+                    String fieldValue = getFieldValue(user, fieldName);
+                    if (fieldValue == null) {
+                        return false;
+                    }
+                    String fieldValueLower = fieldValue.toLowerCase();
+                    switch (operator) {
+                        case "co":
+                            return fieldValueLower.contains(searchValue);
+                        case "eq":
+                            return fieldValueLower.equals(searchValue);
+                        case "sw":
+                            return fieldValueLower.startsWith(searchValue);
+                        case "ew":
+                            return fieldValueLower.endsWith(searchValue);
+                        default:
+                            throw new ResponseStatusException(
+                                    HttpStatus.BAD_REQUEST,
+                                    "Invalid operator: " + operator + ". Use: co, eq, sw, ew"
+                            );
+                    }
+                })
                 .collect(Collectors.toList());
+    }
+
+    private String getFieldValue(User user, String fieldName) {
+        switch (fieldName) {
+            case "email":
+                return user.getEmail();
+            case "id":
+                return user.getId();
+            case "name":
+                return user.getName();
+            case "phone":
+                return user.getPhone();
+            case "tax_id":
+                return user.getTaxId();
+            case "created_at":
+                return user.getCreatedAt();
+            default:
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Invalid field: " + fieldName
+                );
+        }
     }
 
     public User createUser(User newUser) {
 
-        if (!isValidRfc(newUser.getTaxId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Invalid RFC format. Example: AARR990101XXX");
+        if (newUser.getName() == null || newUser.getName().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
         }
-        if (!isValidPhone(newUser.getPhone())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Invalid phone format. Example: +521234567890 or 1234567890");
+        if (newUser.getEmail() == null || newUser.getEmail().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "email is required");
+        }
+        if (newUser.getPhone() == null || newUser.getPhone().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "phone is required");
+        }
+        if (newUser.getTaxId() == null || newUser.getTaxId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "tax_id is required");
+        }
+        if (newUser.getPassword() == null || newUser.getPassword().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "password is required");
         }
 
-        User existingUser = userRepository.findByTaxId(newUser.getTaxId());
-        if (existingUser != null) {
+        if (!isValidRfc(newUser.getTaxId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid RFC format. Example: AARR990101XXX"
+            );
+        }
+
+        if (!isValidPhone(newUser.getPhone())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid phone format. Example: +521234567890 or 1234567890"
+            );
+        }
+
+        if (userRepository.findByTaxId(newUser.getTaxId()) != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "tax_id already exists");
         }
 
@@ -111,50 +192,61 @@ public class UserService {
         return userRepository.save(newUser);
     }
 
-    public User updateUser(String userId, User updatedFields) {
+    public User updateUser(String userId, User updatedUser) {
 
         User existingUser = userRepository.findById(userId);
-
         if (existingUser == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
         }
 
-        if (updatedFields.getPhone() != null && !isValidPhone(updatedFields.getPhone())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Invalid phone format. Example: +521234567890 or 1234567890");
+        if (updatedUser.getPhone() != null && !isValidPhone(updatedUser.getPhone())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid phone format. Example: +521234567890 or 1234567890"
+            );
         }
-        if (updatedFields.getTaxId() != null && !isValidRfc(updatedFields.getTaxId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Invalid RFC format. Example: AARR990101XXX");
+
+        if (updatedUser.getTaxId() != null && !isValidRfc(updatedUser.getTaxId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid RFC format. Example: AARR990101XXX"
+            );
         }
-        if (updatedFields.getTaxId() != null) {
-            User userWithSameTaxId = userRepository.findByTaxId(updatedFields.getTaxId());
+
+        if (updatedUser.getTaxId() != null) {
+            User userWithSameTaxId = userRepository.findByTaxId(updatedUser.getTaxId());
             if (userWithSameTaxId != null && !userWithSameTaxId.getId().equals(userId)) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "tax_id already exists");
             }
         }
 
-        if (updatedFields.getEmail() != null)     existingUser.setEmail(updatedFields.getEmail());
-        if (updatedFields.getName() != null)      existingUser.setName(updatedFields.getName());
-        if (updatedFields.getPhone() != null)     existingUser.setPhone(updatedFields.getPhone());
-        if (updatedFields.getTaxId() != null)     existingUser.setTaxId(updatedFields.getTaxId());
-        if (updatedFields.getAddresses() != null) existingUser.setAddresses(updatedFields.getAddresses());
-
-        if (updatedFields.getPassword() != null) {
-            existingUser.setPassword(encryptPassword(updatedFields.getPassword()));
+        if (updatedUser.getEmail() != null) {
+            existingUser.setEmail(updatedUser.getEmail());
+        }
+        if (updatedUser.getName() != null) {
+            existingUser.setName(updatedUser.getName());
+        }
+        if (updatedUser.getPhone() != null) {
+            existingUser.setPhone(updatedUser.getPhone());
+        }
+        if (updatedUser.getTaxId() != null) {
+            existingUser.setTaxId(updatedUser.getTaxId());
+        }
+        if (updatedUser.getAddresses() != null) {
+            existingUser.setAddresses(updatedUser.getAddresses());
+        }
+        if (updatedUser.getPassword() != null) {
+            existingUser.setPassword(encryptPassword(updatedUser.getPassword()));
         }
 
         return existingUser;
     }
 
     public void deleteUser(String userId) {
-
         User existingUser = userRepository.findById(userId);
-
         if (existingUser == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
         }
-
         userRepository.delete(existingUser);
     }
 
@@ -174,8 +266,8 @@ public class UserService {
             cipher.init(Cipher.ENCRYPT_MODE, keySpec);
             byte[] encryptedBytes = cipher.doFinal(plainText.getBytes());
             return Base64.getEncoder().encodeToString(encryptedBytes);
-        } catch (Exception e) {
-            throw new RuntimeException("Error encrypting password", e);
+        } catch (Exception exception) {
+            throw new RuntimeException("Error encrypting password", exception);
         }
     }
 
@@ -186,53 +278,19 @@ public class UserService {
             cipher.init(Cipher.DECRYPT_MODE, keySpec);
             byte[] decryptedBytes = Base64.getDecoder().decode(encryptedText);
             return new String(cipher.doFinal(decryptedBytes));
-        } catch (Exception e) {
-            throw new RuntimeException("Error decrypting password", e);
+        } catch (Exception exception) {
+            throw new RuntimeException("Error decrypting password", exception);
         }
     }
 
     private boolean isValidRfc(String taxId) {
-        if (taxId == null) return false;
         String rfcRegex = "^[A-ZÑ&]{3,4}\\d{6}[A-Z0-9]{3}$";
-        return taxId.toUpperCase().matches(rfcRegex);
+        return taxId != null && taxId.toUpperCase().matches(rfcRegex);
     }
 
     private boolean isValidPhone(String phone) {
-        if (phone == null) return false;
         String phoneRegex = "^(\\+\\d{1,3}[\\s-]?)?\\d{10}$";
-        return phone.matches(phoneRegex);
-    }
-
-    private boolean matchesFilter(User currentUser, String fieldName, String operator, String searchValue) {
-        String fieldValue = getFieldValue(currentUser, fieldName);
-
-        if (fieldValue == null) return false;
-
-        String fieldValueLower = fieldValue.toLowerCase();
-
-        switch (operator) {
-            case "co": return fieldValueLower.contains(searchValue);
-            case "eq": return fieldValueLower.equals(searchValue);
-            case "sw": return fieldValueLower.startsWith(searchValue);
-            case "ew": return fieldValueLower.endsWith(searchValue);
-            default:
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Invalid operator: " + operator + ". Use: co, eq, sw, ew");
-        }
-    }
-
-    private String getFieldValue(User currentUser, String fieldName) {
-        switch (fieldName) {
-            case "email":      return currentUser.getEmail();
-            case "id":         return currentUser.getId();
-            case "name":       return currentUser.getName();
-            case "phone":      return currentUser.getPhone();
-            case "tax_id":     return currentUser.getTaxId();
-            case "created_at": return currentUser.getCreatedAt();
-            default:
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Invalid field: " + fieldName);
-        }
+        return phone != null && phone.matches(phoneRegex);
     }
 
     private String getCurrentDateTime() {
